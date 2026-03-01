@@ -8,8 +8,8 @@ const {
 const NAME = process.env.NAME || "Bot";
 const CNT = parseInt(process.env.CNT || "1", 10);
 const PASSWORD = process.env.PASSWORD;
-const HOST = "localhost";
-const PORT = 25565;
+const HOST = process.env.HOST || "localhost";
+const PORT = process.env.PORT || 25565;
 const VERSION = process.env.VERSION || "1.21.11";
 const botNames = [];
 const botOnline = [];
