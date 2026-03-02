@@ -132,7 +132,6 @@ function showTable(data, showKey = true, valueKeys = []) {
 
 function updateData() {
 	if (on) {
-		console.clear();
 		console.log("Online players");
 		showTable(players, "UUID", "Name");
 		console.log("Bots");
@@ -219,8 +218,8 @@ function getPos(rays) {
 		return null
 	}
 	return {
-		x: Math.round((Azz * Bx - Axz * Bz) / det * 100) / 100,
-		z: Math.round((Axx * Bz - Axz * Bx) / det * 100) / 100
+		x: Math.round((Azz * Bx - Axz * Bz) / det),
+		z: Math.round((Axx * Bz - Axz * Bx) / det)
 	}
 }
 
@@ -301,12 +300,21 @@ function createManagedBot(index) {
 			port: PORT,
 			username,
 			auth: "offline",
+			respawn: true,
 			VERSION
 		};
 		bot = mineflayer.createBot(options);
+		bot.autoRespawn = true;
+		bot.on("physicsTick", () => {
+			if (!bot.controlState.sneak) {
+				bot.setControlState("sneak", true)
+			}
+		});
 		bot.once("login", () => {
 			botOnline[index - 1] = true;
-			appendLog("[JOIN]", username);
+			if (LOG) {
+				appendLog("[JOIN]", username)
+			}
 			if (!on) {
 				console.log(`${username} joined`)
 			}
@@ -379,7 +387,9 @@ function createManagedBot(index) {
 		if (!on) {
 			console.log(`${username} reconnecting in ${delay/1e3}s`)
 		}
-		appendLog("[Reconnect]", username);
+		if (LOG) {
+			appendLog("[Reconnect]", username)
+		}
 		botOnline[index - 1] = false;
 		timer = setTimeout(() => {
 			timer = null;
