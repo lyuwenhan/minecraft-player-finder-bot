@@ -7,7 +7,7 @@ const {
 	table
 } = require("table");
 const NAME = process.env.NAME || "Bot";
-const CNT = parseInt(process.env.CNT || "1", 10);
+const CNT = parseInt(process.env.CNT || "1", 1);
 const PASSWORD = process.env.PASSWORD;
 const HOST = process.env.HOST || "localhost";
 const PORT = process.env.PORT || 25565;
