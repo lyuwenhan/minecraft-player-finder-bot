@@ -2,6 +2,7 @@ require("dotenv").config({
 	quiet: true
 });
 const mineflayer = require("mineflayer");
+const fs = require("fs");
 const {
 	table
 } = require("table");
@@ -11,6 +12,7 @@ const PASSWORD = process.env.PASSWORD;
 const HOST = process.env.HOST || "localhost";
 const PORT = process.env.PORT || 25565;
 const VERSION = process.env.VERSION || "1.21.11";
+const LOG = process.env.LOG || "1.21.11";
 const botNames = [];
 const botOnline = [];
 const dataTypes = {
@@ -29,6 +31,45 @@ var waypoints = {};
 var waypointss = [];
 var dimension = [];
 var on = true;
+if (LOG) {
+	fs.mkdir("log", {
+		recursive: true
+	})
+}
+const stream = fs.createWriteStream("log/latest.txt", {
+	flags: "a"
+});
+
+function appendLog(...text) {
+	stream.write(text.join(" ") + "\n")
+}
+let shuttingDown = false;
+
+function gracefulShutdown(reason) {
+	if (shuttingDown) return;
+	shuttingDown = true;
+	console.log("Shutting down due to:", reason);
+	stream.end(() => {
+		fs.fsync(stream.fd, () => {
+			process.exit()
+		})
+	})
+}
+process.on("exit", () => {
+	try {
+		fs.fsyncSync(stream.fd)
+	} catch {}
+});
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("uncaughtException", err => {
+	console.error(err);
+	gracefulShutdown("uncaughtException")
+});
+process.on("unhandledRejection", err => {
+	console.error(err);
+	gracefulShutdown("unhandledRejection")
+});
 
 function showTable(data, showKey = true, valueKeys = []) {
 	let headers = [];
@@ -85,7 +126,8 @@ function updateData() {
 		console.log("Online players");
 		showTable(players, "UUID", "Name");
 		console.log("Bots");
-		showTable(botNames.map((name, i) => [name, botOnline[i] ? dimension[i] : "Offline"]), true, ["Name", "Dimension"]);
+		const botStat = botNames.map((name, i) => [name, botOnline[i] ? dimension[i] : "Offline"]);
+		showTable(botStat, true, ["Name", "Dimension"]);
 		console.log("Position");
 		const wp = Object.entries(waypoints);
 		if (!wp.length) {
@@ -98,6 +140,13 @@ function updateData() {
 					console.groupEnd()
 				}
 			})
+		}
+		if (LOG) {
+			appendLog("[Players]", JSON.stringify(players));
+			appendLog("[Bots]", JSON.stringify(botStat));
+			if (wp.length) {
+				appendLog("[Position]", JSON.stringify(waypoints))
+			}
 		}
 	}
 }
@@ -125,7 +174,9 @@ function getPos(rays) {
 	const weights = rays.map((_, i) => {
 		let w = 0;
 		for (let j = 0; j < rays.length; j++) {
-			if (i === j) continue;
+			if (i === j) {
+				continue
+			}
 			const dot = dirs[i].dx * dirs[j].dx + dirs[i].dz * dirs[j].dz;
 			const sin = Math.sqrt(1 - dot * dot);
 			w += sin
@@ -154,7 +205,9 @@ function getPos(rays) {
 		Bz += w * nz * dot
 	}
 	const det = Axx * Azz - Axz * Axz;
-	if (Math.abs(det) < 1e-8) return null;
+	if (Math.abs(det) < 1e-8) {
+		return null
+	}
 	return {
 		x: Math.round((Azz * Bx - Axz * Bz) / det * 100) / 100,
 		z: Math.round((Axx * Bz - Axz * Bx) / det * 100) / 100
@@ -243,6 +296,7 @@ function createManagedBot(index) {
 		bot = mineflayer.createBot(options);
 		bot.once("login", () => {
 			botOnline[index - 1] = true;
+			appendLog("[JOIN]", username);
 			if (!on) {
 				console.log(`${username} joined`)
 			}
@@ -260,6 +314,14 @@ function createManagedBot(index) {
 		}
 		bot.on("respawn", setDim);
 		bot.on("spawn", setDim);
+		if (LOG) {
+			bot.on("chat", (username, message) => {
+				if (botNames.includes(username)) {
+					return
+				}
+				appendLog("[CHAT]", username, message.replaceAll("\n", "\\n"))
+			})
+		}
 
 		function playerChange() {
 			playerss[index - 1] = Object.fromEntries(Object.values(bot.players).filter(p => p.uuid).map(p => [p.uuid, p.username]));
@@ -307,6 +369,7 @@ function createManagedBot(index) {
 		if (!on) {
 			console.log(`${username} reconnecting in ${delay/1e3}s`)
 		}
+		appendLog("[Reconnect]", username);
 		botOnline[index - 1] = false;
 		timer = setTimeout(() => {
 			timer = null;
