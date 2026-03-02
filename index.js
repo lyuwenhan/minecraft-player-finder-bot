@@ -7,7 +7,7 @@ const {
 	table
 } = require("table");
 const NAME = process.env.NAME || "Bot";
-const CNT = parseInt(process.env.CNT || "1", 1);
+const CNT = parseInt(process.env.CNT || "1", 10);
 const PASSWORD = process.env.PASSWORD;
 const HOST = process.env.HOST || "localhost";
 const PORT = process.env.PORT || 25565;
@@ -36,40 +36,50 @@ if (LOG) {
 		recursive: true
 	})
 }
-const stream = fs.createWriteStream("log/latest.txt", {
-	flags: "a"
-});
-
-function appendLog(...text) {
-	stream.write(text.join(" ") + "\n")
-}
-let shuttingDown = false;
-
-function gracefulShutdown(reason) {
-	if (shuttingDown) return;
-	shuttingDown = true;
-	console.log("Shutting down due to:", reason);
-	stream.end(() => {
-		fs.fsync(stream.fd, () => {
-			process.exit()
-		})
+let stream;
+if (LOG) {
+	stream = fs.createWriteStream("log/latest.txt", {
+		flags: "a"
 	})
 }
-process.on("exit", () => {
-	try {
-		fs.fsyncSync(stream.fd)
-	} catch {}
-});
-process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-process.on("uncaughtException", err => {
-	console.error(err);
-	gracefulShutdown("uncaughtException")
-});
-process.on("unhandledRejection", err => {
-	console.error(err);
-	gracefulShutdown("unhandledRejection")
-});
+
+function appendLog(...text) {
+	if (!LOG || !stream) {
+		return
+	}
+	stream.write(text.join(" ") + "\n")
+}
+if (LOG) {
+	let shuttingDown = false;
+
+	function gracefulShutdown(reason) {
+		if (shuttingDown) {
+			return
+		}
+		shuttingDown = true;
+		console.log("Shutting down due to:", reason);
+		stream.end(() => {
+			fs.fsync(stream.fd, () => {
+				process.exit()
+			})
+		})
+	}
+	process.on("exit", () => {
+		try {
+			fs.fsyncSync(stream.fd)
+		} catch {}
+	});
+	process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+	process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+	process.on("uncaughtException", err => {
+		console.error(err);
+		gracefulShutdown("uncaughtException")
+	});
+	process.on("unhandledRejection", err => {
+		console.error(err);
+		gracefulShutdown("unhandledRejection")
+	})
+}
 
 function showTable(data, showKey = true, valueKeys = []) {
 	let headers = [];
