@@ -12,7 +12,7 @@ const PASSWORD = process.env.PASSWORD;
 const HOST = process.env.HOST || "localhost";
 const PORT = process.env.PORT || 25565;
 const VERSION = process.env.VERSION || "1.21.11";
-const LOG = process.env.LOG || "1.21.11";
+const LOG = process.env.LOG === "true";
 const botNames = [];
 const botOnline = [];
 const dataTypes = {
@@ -32,7 +32,7 @@ var waypointss = [];
 var dimension = [];
 var on = true;
 if (LOG) {
-	fs.mkdir("log", {
+	fs.mkdirSync("log", {
 		recursive: true
 	})
 }
