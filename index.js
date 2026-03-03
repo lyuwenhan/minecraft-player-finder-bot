@@ -301,7 +301,7 @@ function createManagedBot(index) {
 			username,
 			auth: "offline",
 			respawn: true,
-			VERSION
+			version: VERSION
 		};
 		bot = mineflayer.createBot(options);
 		bot.autoRespawn = true;
@@ -319,6 +319,9 @@ function createManagedBot(index) {
 				console.log(`${username} joined`)
 			}
 			delay = 100
+			if (PASSWORD) {
+				bot.chat(`/login ${PASSWORD}`)
+			}
 		});
 
 		function setDim(packet) {
@@ -348,11 +351,6 @@ function createManagedBot(index) {
 		bot._client.on("player_info", playerChange);
 		bot.on("playerJoined", playerChange);
 		bot.on("playerLeft", playerChange);
-		if (PASSWORD) {
-			bot.once("spawn", () => {
-				bot.chat(`/login ${PASSWORD}`)
-			})
-		}
 		bot._client.on("tracked_waypoint", packet => {
 			const waypoint = packet?.waypoint;
 			if (waypoint?.hasUUID && waypoint.uuid && operations[packet.operation]) {
