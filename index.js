@@ -15,6 +15,7 @@ const VERSION = process.env.VERSION || "1.21.11";
 const LOG = process.env.LOG === "true";
 const botNames = [];
 const botOnline = [];
+const botPos = [];
 const dataTypes = {
 	vec3i: 1,
 	chunk: 2,
@@ -135,8 +136,8 @@ function updateData() {
 		console.log("Online players");
 		showTable(players, "UUID", "Name");
 		console.log("Bots");
-		const botStat = botNames.map((name, i) => [name, botOnline[i] ? dimension[i] : "Offline"]);
-		showTable(botStat, true, ["Name", "Dimension"]);
+		const botStat = botNames.map((name, i) => [name, botOnline[i] ? dimension[i] : "Offline", botOnline[i] ? botPos[i] : ""]);
+		showTable(botStat, true, ["Name", "Dimension", "Position"]);
 		console.log("Position");
 		const wp = Object.entries(waypoints);
 		if (!wp.length) {
@@ -174,7 +175,7 @@ function updatePlayers() {
 function getPos(rays) {
 	const dirs = rays.map(r => {
 		const dx = -Math.sin(r.azimuth);
-		const dz = -Math.cos(r.azimuth);
+		const dz = Math.cos(r.azimuth);
 		return {
 			dx,
 			dz
@@ -288,6 +289,7 @@ function updateWaypoints() {
 function createManagedBot(index) {
 	const username = `${NAME}${index}`;
 	botOnline.push(false);
+	botPos.push("");
 	botNames.push(username);
 	let delay = 100;
 	const MAX_DELAY = 1e4;
@@ -318,13 +320,23 @@ function createManagedBot(index) {
 			if (!on) {
 				console.log(`${username} joined`)
 			}
-			delay = 100
+			delay = 100;
 			if (PASSWORD) {
 				bot.chat(`/login ${PASSWORD}`)
 			}
 		});
 
+		function setPos(packet) {
+			const npos = `${Math.round(bot.entity.position.x)} ${Math.round(bot.entity.position.y)} ${Math.round(bot.entity.position.z)}`;
+			if (npos !== botPos[index - 1]) {
+				botPos[index - 1] = npos;
+				updateData()
+			}
+		}
+		bot.on("move", setPos);
+
 		function setDim(packet) {
+			setPos(packet);
 			if (dimension[index - 1] !== bot.game.dimension) {
 				dimension[index - 1] = bot.game.dimension;
 				if (!on) {
