@@ -334,9 +334,18 @@ function createManagedBot(index) {
 		};
 		bot = mineflayer.createBot(options);
 		bot.autoRespawn = true;
+
+		function doSneak() {
+			bot.setControlState("sneak", true);
+			bot._client.write("entity_action", {
+				entityId: bot.entity.id,
+				actionId: 0,
+				jumpBoost: 0
+			})
+		}
 		bot.on("physicsTick", () => {
 			if (!bot.controlState.sneak) {
-				bot.setControlState("sneak", true)
+				doSneak()
 			}
 		});
 		bot.once("login", () => {
@@ -368,6 +377,7 @@ function createManagedBot(index) {
 		bot.on("move", setPos);
 
 		function setDim(packet) {
+			doSneak();
 			const changeDim = dimension[index - 1] !== bot.game.dimension;
 			setPos(packet, !changeDim);
 			if (changeDim) {
