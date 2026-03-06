@@ -226,8 +226,8 @@ function getPos(rays) {
 		return null
 	}
 	return {
-		x: Math.round((Azz * Bx - Axz * Bz) / det),
-		z: Math.round((Axx * Bz - Axz * Bx) / det)
+		x: Math.floor((Azz * Bx - Axz * Bz) / det),
+		z: Math.floor((Axx * Bz - Axz * Bx) / det)
 	}
 }
 
@@ -352,7 +352,7 @@ function createManagedBot(index) {
 			if (!bot.entity) {
 				return
 			}
-			const npos = `${Math.round(bot.entity.position.x)} ${Math.round(bot.entity.position.y)} ${Math.round(bot.entity.position.z)}`;
+			const npos = `${Math.floor(bot.entity.position.x)} ${Math.floor(bot.entity.position.y)} ${Math.floor(bot.entity.position.z)}`;
 			if (npos !== botPos[index - 1]) {
 				botPos[index - 1] = npos;
 				updateData()
