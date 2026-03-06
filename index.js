@@ -175,8 +175,10 @@ function updatePlayers() {
 			nPlayers[uuid] = name
 		})
 	});
-	players = nPlayers;
-	updateData()
+	if (JSON.stringify(players) !== JSON.stringify(nPlayers)) {
+		players = nPlayers;
+		updateData()
+	}
 }
 
 function getPos(rays) {
