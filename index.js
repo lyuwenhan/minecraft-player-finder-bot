@@ -250,7 +250,7 @@ function updateWaypoints() {
 					if (!dataChunk[dim]) {
 						dataChunk[dim] = {}
 					}
-					dataChunk[dim][name] = `${data.chunkX*16} ? ${data.chunkZ}`;
+					dataChunk[dim][name] = `${data.chunkX*16} ? ${data.chunkZ*16}`;
 					break
 				}
 				case 3: {
