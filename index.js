@@ -426,8 +426,11 @@ function createManagedBot(index) {
 			if (!entity || entity.type !== "player") {
 				return
 			}
-			waypointss2[index - 1] = Object.values(bot.players).filter(player => player.entity && player.uuid).map(player => [player.uuid, `${Math.floor(player.entity.position.x)} ${Math.floor(player.entity.position.y)} ${Math.floor(player.entity.position.z)}`]);
-			updateWaypoints()
+			const newPositions = Object.values(bot.players).filter(player => player.entity && player.uuid).map(player => [player.uuid, `${Math.floor(player.entity.position.x)} ${Math.floor(player.entity.position.y)} ${Math.floor(player.entity.position.z)}`]);
+			if (JSON.stringify(waypointss2[index - 1]) !== JSON.stringify(newPositions)) {
+				waypointss2[index - 1] = newPositions;
+				updateWaypoints()
+			}
 		}
 		bot.on("entitySpawn", updatePlayers2);
 		bot.on("entityMoved", updatePlayers2);
