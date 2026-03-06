@@ -17,11 +17,17 @@ const botNames = [];
 const botOnline = [];
 const botPos = [];
 const dataTypes = {
+	1: 1,
+	2: 2,
+	3: 3,
 	vec3i: 1,
 	chunk: 2,
 	azimuth: 3
 };
 const operations = {
+	0: 1,
+	1: 2,
+	2: 1,
 	track: 1,
 	update: 1,
 	untrack: 2
@@ -30,6 +36,7 @@ var players = {};
 var playerss = [];
 var waypoints = {};
 var waypointss = [];
+var waypointss2 = [];
 var dimension = [];
 var on = true;
 if (LOG) {
@@ -116,7 +123,7 @@ function showTable(data, showKey = true, valueKeys = []) {
 			nValue = [...value]
 		} else if (typeof value === "object" && value !== null) {
 			if (valueKeys.length) {
-				nValue = valueKeys.map(k => value[key])
+				nValue = valueKeys.map(k => value[k])
 			} else {
 				nValue = Object.values(value)
 			}
@@ -226,6 +233,7 @@ function getPos(rays) {
 
 function updateWaypoints() {
 	const dataPos = {};
+	const dataPos2 = {};
 	const dataChunk = {};
 	const dataAzimuths = {};
 	waypointss.forEach((way, i) => {
@@ -266,10 +274,24 @@ function updateWaypoints() {
 			}
 		})
 	});
-	waypoints = [...new Set([...Object.keys(dataPos), ...Object.keys(dataChunk), ...Object.keys(dataAzimuths)])].reduce((acc, key) => {
+	waypointss2.forEach((way, i) => {
+		const dim = dimension[i];
+		way.forEach(([uuid, pos]) => {
+			const name = players[uuid];
+			if (!name || botNames.includes(name)) {
+				return
+			}
+			if (!dataPos2[dim]) {
+				dataPos2[dim] = {}
+			}
+			dataPos2[dim][name] = pos
+		})
+	});
+	waypoints = [...new Set([...Object.keys(dataPos), ...Object.keys(dataPos2), ...Object.keys(dataChunk), ...Object.keys(dataAzimuths)])].reduce((acc, key) => {
 		acc[key] = {
 			...dataChunk[key],
-			...dataPos[key]
+			...dataPos[key],
+			...dataPos2[key]
 		};
 		if (dataAzimuths[key]) {
 			Object.entries(dataAzimuths[key]).forEach(([name, rays]) => {
@@ -327,6 +349,9 @@ function createManagedBot(index) {
 		});
 
 		function setPos(packet) {
+			if (!bot.entity) {
+				return
+			}
 			const npos = `${Math.round(bot.entity.position.x)} ${Math.round(bot.entity.position.y)} ${Math.round(bot.entity.position.z)}`;
 			if (npos !== botPos[index - 1]) {
 				botPos[index - 1] = npos;
@@ -357,7 +382,7 @@ function createManagedBot(index) {
 		}
 
 		function playerChange() {
-			playerss[index - 1] = Object.fromEntries(Object.values(bot.players).filter(p => p.uuid).map(p => [p.uuid, p.username]));
+			playerss[index - 1] = Object.fromEntries(Object.values(bot.players).filter(p => p.uuid && p.username).map(p => [p.uuid, p.username]));
 			updatePlayers()
 		}
 		bot._client.on("player_info", playerChange);
@@ -374,7 +399,10 @@ function createManagedBot(index) {
 								type: waypoint.type,
 								data: {
 									azimuth: waypoint.data,
-									position: bot.entity.position
+									position: {
+										x: bot.entity.position.x,
+										z: bot.entity.position.z
+									}
 								}
 							}
 						}
@@ -388,6 +416,17 @@ function createManagedBot(index) {
 				updateWaypoints()
 			}
 		});
+
+		function updatePlayers2(entity) {
+			if (!entity || entity.type !== "player") {
+				return
+			}
+			waypointss2[index - 1] = Object.values(bot.players).filter(player => player.entity && player.uuid).map(player => [player.uuid, `${Math.floor(player.entity.position.x)} ${Math.floor(player.entity.position.y)} ${Math.floor(player.entity.position.z)}`]);
+			updateWaypoints()
+		}
+		bot.on("entitySpawn", updatePlayers2);
+		bot.on("entityMoved", updatePlayers2);
+		bot.on("entityGone", updatePlayers2);
 		bot.once("end", scheduleReconnect);
 		bot.once("error", scheduleReconnect)
 	}
@@ -415,6 +454,9 @@ playerss = Array.from({
 waypointss = Array.from({
 	length: CNT
 }, () => ({}));
+waypointss2 = Array.from({
+	length: CNT
+}, () => []);
 dimension = Array.from({
 	length: CNT
 }, () => "");
