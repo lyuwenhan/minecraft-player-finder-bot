@@ -289,7 +289,7 @@ function updateWaypoints() {
 			dataPos2[dim][name] = pos
 		})
 	});
-	waypoints = [...new Set([...Object.keys(dataPos), ...Object.keys(dataPos2), ...Object.keys(dataChunk), ...Object.keys(dataAzimuths)])].reduce((acc, key) => {
+	const newWaypoints = [...new Set([...Object.keys(dataPos), ...Object.keys(dataPos2), ...Object.keys(dataChunk), ...Object.keys(dataAzimuths)])].reduce((acc, key) => {
 		acc[key] = {
 			...dataChunk[key],
 			...dataPos[key],
@@ -307,7 +307,10 @@ function updateWaypoints() {
 		}
 		return acc
 	}, {});
-	updateData()
+	if (JSON.stringify(waypoints) !== JSON.stringify(newWaypoints)) {
+		waypoints = newWaypoints;
+		updateData()
+	}
 }
 
 function createManagedBot(index) {
