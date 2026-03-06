@@ -353,21 +353,24 @@ function createManagedBot(index) {
 			}
 		});
 
-		function setPos(packet) {
+		function setPos(packet, doUpd = true) {
 			if (!bot.entity) {
 				return
 			}
 			const npos = `${Math.floor(bot.entity.position.x)} ${Math.floor(bot.entity.position.y)} ${Math.floor(bot.entity.position.z)}`;
 			if (npos !== botPos[index - 1]) {
 				botPos[index - 1] = npos;
-				updateData()
+				if (doUpd) {
+					updateData()
+				}
 			}
 		}
 		bot.on("move", setPos);
 
 		function setDim(packet) {
-			setPos(packet);
-			if (dimension[index - 1] !== bot.game.dimension) {
+			const changeDim = dimension[index - 1] !== bot.game.dimension;
+			setPos(packet, !changeDim);
+			if (changeDim) {
 				dimension[index - 1] = bot.game.dimension;
 				if (!on) {
 					console.log(username, "spawn at dim", dimension[index - 1])
