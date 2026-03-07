@@ -137,8 +137,13 @@ function showTable(data, showKey = true, valueKeys = []) {
 	});
 	console.log(table([headers, ...rows]))
 }
+var doingCnt = 0;
 
 function updateData() {
+	doingCnt++;
+	if (doingCnt > 1) {
+		return
+	}
 	if (on) {
 		console.log("Online players");
 		showTable(players, "UUID", "Name");
@@ -165,6 +170,11 @@ function updateData() {
 				appendLog("[Position]", JSON.stringify(waypoints))
 			}
 		}
+	}
+	const la = doingCnt;
+	doingCnt = 0;
+	if (la > 1) {
+		updateData()
 	}
 }
 
